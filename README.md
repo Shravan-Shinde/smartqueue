@@ -103,34 +103,5 @@ npm run build
 ### Q4: How is real-time notification delivery scoped securely to individual customers?
 **Answer**: Socket.IO authentication is bound to JWT sessions during the initial WebSocket handshake. Each authenticated connection is joined to a private user room (`user:${userId}`). When BullMQ background workers process a notification job, they emit events strictly to that private user room. Unauthorized customers cannot listen to other users' socket rooms, preventing token/notification eavesdropping across tenants.
 
----
-
-## 🗺️ Completed Sprint Roadmap (Sprints 0 – 26)
-
-- **Sprint 0**: Foundation & Dark SaaS Design System (COMPLETE)
-- **Sprint 1**: Authentication + RBAC + User Profile (COMPLETE)
-- **Sprint 2**: Organization Discovery (COMPLETE)
-- **Sprint 3**: Admin Organization Management (COMPLETE)
-- **Sprint 4**: Queue + Counter Management (COMPLETE)
-- **Sprint 5**: Customer Join Queue & Token Generation (COMPLETE)
-- **Sprint 6**: Real-Time Customer Queue & Socket.IO Events (COMPLETE)
-- **Sprint 7**: Persistent Notification System & Real-Time Delivery (COMPLETE)
-- **Sprint 8**: Staff Dashboard & Queue Operational Engine (COMPLETE)
-- **Sprint 9**: Staff History & Counter Management (COMPLETE)
-- **Sprint 10**: Priority Scheduling & Aging Protection (COMPLETE)
-- **Sprint 11**: Smart Wait-Time Engine (COMPLETE)
-- **Sprint 12**: Secure QR Token Generation & Customer Display (COMPLETE)
-- **Sprint 13**: QR Check-In & Staff Validation (COMPLETE)
-- **Sprint 14**: Analytics Engine & Operational Metrics (COMPLETE)
-- **Sprint 15**: Admin Analytics Dashboard UI (COMPLETE)
-- **Sprint 16**: Live Crowd Dashboard & Real-Time Operations Monitor (COMPLETE)
-- **Sprint 17**: Customer Reviews & Service Feedback (COMPLETE)
-- **Sprint 18**: Customer History & Service Record (COMPLETE)
-- **Sprint 19**: Security Hardening & Authorization Audit (COMPLETE)
-- **Sprint 20**: Comprehensive Testing, QA & Release Validation (COMPLETE)
-- **Sprint 21**: MongoDB Performance, Index & Query Optimization (COMPLETE)
-- **Sprint 22**: Redis Integration, Caching & Failure Resilience (COMPLETE)
-- **Sprint 23**: BullMQ Background Job Processing & Asynchronous Tasks (COMPLETE)
-- **Sprint 24**: Docker Containerization & Local Infrastructure (COMPLETE)
 - **Sprint 25**: Production Deployment, Cloud Configuration & Live Release Validation (COMPLETE)
 - **Sprint 26**: Final UI/UX Polish, Accessibility, Performance & Portfolio Readiness (COMPLETE — FEATURE FREEZE)
