@@ -1,0 +1,132 @@
+version: '3.8'
+
+services:
+  # ====================================================
+  # 1. MongoDB Database Container (Source of Truth)
+  # ====================================================
+  mongodb:
+    image: mongo:7.0-jammy
+    container_name: smartqueue-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - smartqueue-net
+
+  # ====================================================
+  # 2. Redis Cache & BullMQ Queue Backend Container
+  # ====================================================
+  redis:
+    image: redis:7-alpine
+    container_name: smartqueue-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - smartqueue-net
+
+  # ====================================================
+  # 3. SmartQueue Express API & Socket.IO Server Container
+  # ====================================================
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smartqueue-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - PORT=5000
+      - MONGO_URI=mongodb://mongodb:27017/smartqueue
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-smartqueue_jwt_secret_dev_key_2026}
+      - CLIENT_URL=${CLIENT_URL:-http://localhost:8080}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:5000/api/v1/health', (r) => { process.exit(r.statusCode === 200 ? 0 : 1); }).on('error', () => process.exit(1));"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - smartqueue-net
+
+  # ====================================================
+  # 4. BullMQ Notification Background Worker Container
+  # ====================================================
+  worker:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: smartqueue-worker
+    command: ["npm", "run", "worker"]
+    restart: unless-stopped
+    environment:
+      - MONGO_URI=mongodb://mongodb:27017/smartqueue
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET:-smartqueue_jwt_secret_dev_key_2026}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      backend:
+        condition: service_healthy
+    networks:
+      - smartqueue-net
+
+  # ====================================================
+  # 5. Production Nginx Frontend Static Container
+  # ====================================================
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - VITE_API_URL=http://localhost:5000/api/v1
+        - VITE_SOCKET_URL=http://localhost:5000
+    container_name: smartqueue-frontend
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+    networks:
+      - smartqueue-net
+
+# Volume definitions
+volumes:
+  mongodb_data:
+    driver: local
+
+# Isolated Docker network
+networks:
+  smartqueue-net:
+    driver: bridge
